@@ -36,7 +36,7 @@ func main() {
 		payloads = append(payloads, builder.Query(u)...)
 	}
 
-	ctx, cancel := browser.Config(opts.Timeout)
+	ctx, cancel := browser.Config(opts)
 	defer cancel()
 
 	fuzzer.New(payloads, ctx, opts)
