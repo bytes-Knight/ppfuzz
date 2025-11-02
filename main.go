@@ -4,11 +4,11 @@ import (
 	"bufio"
 	"os"
 
-	"ppfuzz/pkg/browser"
-	"ppfuzz/pkg/builder"
-	"ppfuzz/pkg/errors"
-	"ppfuzz/pkg/fuzzer"
-	"ppfuzz/pkg/parser"
+	"github.com/bytes-Knight/ppfuzz/pkg/browser"
+	"github.com/bytes-Knight/ppfuzz/pkg/builder"
+	"github.com/bytes-Knight/ppfuzz/pkg/errors"
+	"github.com/bytes-Knight/ppfuzz/pkg/fuzzer"
+	"github.com/bytes-Knight/ppfuzz/pkg/parser"
 )
 
 func main() {
