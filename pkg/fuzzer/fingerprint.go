@@ -1,3 +1,6 @@
+package fuzzer
+
+const FingerprintJS = `
 // Original taken from https://gist.github.com/nikitastupin/b3b64a9f8c0eb74ce37626860193eaec
 // Update some based on https://github.com/BlackFan/client-side-prototype-pollution/tree/master/gadgets
 
@@ -110,3 +113,4 @@
 
   return gadgets;
 })();
+`
