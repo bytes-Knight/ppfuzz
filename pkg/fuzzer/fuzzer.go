@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/chromedp/chromedp"
+	"github.com/bytes-Knight/ppfuzz/pkg/errors"
 	"github.com/bytes-Knight/ppfuzz/pkg/parser"
 )
 
@@ -14,6 +15,7 @@ import (
 func New(urls []string, browserCtx context.Context, opt *parser.Options) {
 	var wg sync.WaitGroup
 	semaphore := make(chan struct{}, opt.Concurrency)
+	errorChan := make(chan error, len(urls))
 
 	for _, u := range urls {
 		wg.Add(1)
@@ -22,31 +24,57 @@ func New(urls []string, browserCtx context.Context, opt *parser.Options) {
 			defer wg.Done()
 			defer func() { <-semaphore }()
 
-			var polluted bool
-			err := chromedp.Run(browserCtx,
-				chromedp.Navigate(u),
-				chromedp.Evaluate(`(window.ppfuzz || Object.prototype.ppfuzz) == 'reserved'`, &polluted),
-			)
+			polluted, err := isPolluted(browserCtx, u)
+			if err != nil {
+				errorChan <- err
+				return
+			}
 
-			if err == nil && polluted {
-				var gadgets []string
-				// Re-run with the fingerprint script
-				err = chromedp.Run(browserCtx,
-					chromedp.Navigate(u),
-					chromedp.Evaluate(FingerprintJS, &gadgets),
-				)
+			if polluted {
+				gadgets, err := getGadgets(browserCtx, u)
+				if err != nil {
+					errorChan <- err
+					return
+				}
 
-				if err == nil {
-					fmt.Printf("[VULNERABLE] %s\n", u)
-					if len(gadgets) > 0 {
-						fingerprint(u, gadgets)
-					}
+				fmt.Printf("[VULNERABLE] %s\n", u)
+				if len(gadgets) > 0 {
+					fingerprint(u, gadgets)
 				}
 			}
 		}(u)
 	}
 
 	wg.Wait()
+	close(errorChan)
+
+	for err := range errorChan {
+		errors.Handle(err)
+	}
+}
+
+func isPolluted(ctx context.Context, u string) (bool, error) {
+	var polluted bool
+	err := chromedp.Run(ctx,
+		chromedp.Navigate(u),
+		chromedp.Evaluate(`(window.ppfuzz || Object.prototype.ppfuzz) == 'reserved'`, &polluted),
+	)
+	if err != nil {
+		return false, &errors.URLError{URL: u, Err: err}
+	}
+	return polluted, nil
+}
+
+func getGadgets(ctx context.Context, u string) ([]string, error) {
+	var gadgets []string
+	err := chromedp.Run(ctx,
+		chromedp.Navigate(u),
+		chromedp.Evaluate(FingerprintJS, &gadgets),
+	)
+	if err != nil {
+		return nil, &errors.URLError{URL: u, Err: err}
+	}
+	return gadgets, nil
 }
 
 func fingerprint(targetURL string, gadgets []string) {
