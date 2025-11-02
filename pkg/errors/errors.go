@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-// Handle logs an error and exits the program.
+// Handle logs an error.
 func Handle(err error) {
 	if err != nil {
 		var urlErr *URLError
@@ -15,6 +15,5 @@ func Handle(err error) {
 		} else {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		}
-		os.Exit(1)
 	}
 }
